@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, Circle, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
-import type { MarkerCluster } from "leaflet.markercluster";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
@@ -38,13 +37,14 @@ function numIcon(n: number, delayMs = 0) {
 }
 
 // cluster bubble for wide-radius searches: count badge, splits apart on zoom
-function clusterIcon(cluster: MarkerCluster) {
+function clusterIcon(cluster: L.MarkerCluster) {
   const n = cluster.getChildCount();
   const tier = n < 10 ? "small" : n < 50 ? "medium" : "large";
+  const size = tier === "small" ? 40 : tier === "medium" ? 48 : 56;
   return L.divIcon({
     className: "cluster-icon",
     html: `<div class="cluster-num ${tier}"><span>${n}</span></div>`,
-    iconSize: L.point(tier === "small" ? 40 : tier === "medium" ? 48 : 56),
+    iconSize: L.point(size, size),
   });
 }
 function starIcon() {
@@ -109,10 +109,10 @@ function NearbyRadius() {
 
 function RoutePolylines() {
   const { journey, ridePath } = useApp();
-  const chosen = journey.chosenLegs as HopOption[] | undefined;
+  const chosen: HopOption[] = (journey.chosenLegs as HopOption[]) ?? [];
   const lines: { pts: Coord[]; mode: string; hop: number }[] = [];
 
-  for (const opt of chosen ?? []) {
+  for (const opt of chosen) {
     const pts = legGeometry(opt);
     if (pts.length < 2) continue;
     const hopIdx = chosen.findIndex((c) => c.optionId === opt.optionId) + 1;

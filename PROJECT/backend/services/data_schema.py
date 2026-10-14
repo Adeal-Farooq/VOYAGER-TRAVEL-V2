@@ -111,6 +111,8 @@ class Review(BaseModel):
     text: str = ""
     date: str = ""
     source: str = "serpapi"
+    avatar: str = ""  # real reviewer photo URL (user_thumbnail)
+    author_review_count: int | None = None
 
 
 class PlaceDetails(Place):
@@ -123,6 +125,13 @@ class PlaceDetails(Place):
     pin_class: Literal["green", "yellow", "red"] | None = None
     summary: str = ""
     concerns: list[str] = Field(default_factory=list)
+    positives: list[str] = Field(default_factory=list)
+    verdict: str = ""
+    # real Google per-star tally over ALL ratings ({5: n, 4: n, ...})
+    rating_distribution: dict[int, int] = Field(default_factory=dict)
+    # how many review bodies the summary was actually built from
+    reviews_sampled: int = 0
+    summary_source: str = "none"  # llm | heuristic | none
 
 
 class ReliabilityInput(BaseModel):

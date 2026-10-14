@@ -68,6 +68,8 @@ export interface Review {
   text: string;
   date: string;
   source: string;
+  avatar?: string;
+  author_review_count?: number | null;
 }
 
 export interface PlaceDetails extends PlaceResult {
@@ -79,6 +81,13 @@ export interface PlaceDetails extends PlaceResult {
   pin_class?: "green" | "yellow" | "red" | null;
   summary?: string;
   concerns?: string[];
+  positives?: string[];
+  verdict?: string;
+  /** real Google per-star tally over ALL ratings, e.g. {5: 38910, 4: 17833} */
+  rating_distribution?: Record<string, number>;
+  /** how many review bodies the analysis was actually built from */
+  reviews_sampled?: number;
+  summary_source?: "llm" | "heuristic" | "none" | string;
 }
 
 // ============================================================ rides
@@ -120,6 +129,9 @@ export interface AccessWalk {
   lng: number;
   durationMin: number;
   distanceKm: number;
+  /** true when this walk is between two stops (bus → walk → bus) */
+  isTransferWalk?: boolean;
+  fromStop?: string;
 }
 
 export interface HopOption {
@@ -145,6 +157,15 @@ export interface HopOption {
   probeNext?: ProbeOption[];
   exceedsBudget?: boolean;
   accessWalk?: AccessWalk;
+  /** walkable last leg straight to the destination */
+  isFinalWalk?: boolean;
+  /** real wait at the boarding stop before this departure, minutes */
+  waitMin?: number | null;
+  /** wait longer than the builder's comfort threshold */
+  longWait?: boolean | null;
+  /** this ride ends within a short walk of the destination */
+  reachesNearDestination?: boolean;
+  remainingToDestKm?: number;
 }
 
 export interface ProbeOption {
@@ -194,6 +215,21 @@ export interface LiveContext {
     safety?: string;
   };
   errors?: string[];
+}
+
+// assistant (/api/langgraph/ask) — the live context the question is asked about
+// and the synthesis the backend returns (it never invents numbers).
+export interface AskContext {
+  source?: PlaceModel | null;
+  destination?: PlaceModel | null;
+  place?: PlaceResult | null;
+  groupSize?: number;
+  budget?: number;
+}
+
+export interface AskResponse {
+  live_context: LiveContext;
+  synthesis?: { answer?: string; factors?: string[] };
 }
 
 export interface ScoredRoute {

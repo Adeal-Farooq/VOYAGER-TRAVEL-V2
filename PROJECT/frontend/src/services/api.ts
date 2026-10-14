@@ -1,5 +1,7 @@
 import axios from "axios";
 import type {
+  AskContext,
+  AskResponse,
   DriveRoute,
   LatLng,
   NewsItem,
@@ -28,6 +30,7 @@ export interface Api {
   routeSegments: (src: LatLng, dst: LatLng, groupSize: number, budget: number, currentTime?: string | null, signal?: AbortSignal) => Promise<SegmentResponse>;
   segmentNext: (journey: unknown, chosenLegs: unknown[], groupSize: number, budget: number) => Promise<SegmentResponse>;
   driveRoute: (origin: LatLng, dest: LatLng) => Promise<DriveRoute>;
+  ask: (message: string, context?: AskContext) => Promise<AskResponse>;
   tripPlan: (p: TripPlanRequest) => Promise<TripPlan>;
 }
 
@@ -117,6 +120,18 @@ export const api: Api = {
     const { data } = await http.post<DriveRoute>("/routes/drive", {
       origin: { ...origin, name: origin.name ?? "" },
       destination: { ...dest, name: dest.name ?? "" },
+    });
+    return data;
+  },
+
+  async ask(message, context) {
+    // ask about the destination when there is one, else about the source
+    const focus = context?.destination ?? context?.source ?? null;
+    const { data } = await http.post<AskResponse>("/langgraph/ask", {
+      message,
+      lat: focus?.lat ?? null,
+      lng: focus?.lng ?? null,
+      context: context ?? null,
     });
     return data;
   },

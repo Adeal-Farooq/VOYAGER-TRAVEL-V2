@@ -1,5 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import type { Coord, LatLng, LiveContext, NewsItem, PlaceDetails, PlaceResult, QuickPlan, RidePrice, SegmentResponse, TripInputData, WeatherNow } from "../types";
+import { createContext, useContext, useState, type ReactNode } from "react";
+import type { Coord, LatLng, NewsItem, PlaceDetails, PlaceResult, QuickPlan, RidePrice, SegmentResponse, TripInputData, WeatherNow } from "../types";
 
 export type Mode = "search" | "atob" | "trip";
 
@@ -7,6 +7,15 @@ export interface NearbyBase {
   lat: number;
   lng: number;
   radiusM: number;
+}
+
+/** Where the last search was centred — lets "Nearby" search around the place
+ *  the user just looked up instead of throwing that away and falling back to
+ *  their GPS position. */
+export interface SearchAnchor {
+  name: string;
+  lat: number;
+  lng: number;
 }
 
 export interface JourneyState {
@@ -61,6 +70,8 @@ interface AppState {
   setQuickPlans: (p: QuickPlan[]) => void;
   nearbyBase: NearbyBase | null;
   setNearbyBase: (b: NearbyBase | null) => void;
+  searchAnchor: SearchAnchor | null;
+  setSearchAnchor: (a: SearchAnchor | null) => void;
   clearTransient: () => void;
 
   ridePath: Coord[] | null;
@@ -106,6 +117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [fuel, setFuel] = useState<number | null>(null);
   const [quickPlans, setQuickPlans] = useState<QuickPlan[]>([]);
   const [nearbyBase, setNearbyBase] = useState<NearbyBase | null>(null);
+  const [searchAnchor, setSearchAnchor] = useState<SearchAnchor | null>(null);
   const [ridePath, setRidePath] = useState<Coord[] | null>(null);
   const [flowOpen, setFlowOpen] = useState(false);
   const [flowParams, setFlowParams] = useState({ groupSize: 1, budget: 500 });
@@ -134,6 +146,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setDest(source);
   };
 
+  // NOTE: `searchAnchor` deliberately survives clearTransient() so switching to
+  // the Nearby tab keeps searching around the place the user just looked up.
+  // clearQuery() (the search box's X) clears it explicitly.
   const clearTransient = () => {
     setPlaces([]);
     setSearchResults([]);
@@ -151,7 +166,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setJourney({ segments: null, chosenLegs: [], active: false, position: null });
   };
 
-  const value = useMemo<AppState>(() => ({
+  // NOTE: this object is rebuilt on every provider render on purpose. It used to
+  // be wrapped in useMemo with an incomplete dependency list, so `radiusKm`,
+  // `hoveredPlaceId`, `searching` and `searched` went stale for every consumer
+  // (hover-sync between the result cards and the map pins silently stopped
+  // working, and the nearby radius slider froze until another dep changed).
+  const value: AppState = {
     mode, setMode, dark, toggleDark,
     userLoc, setUserLoc,
     source, dest, setSource, setDest, swap,
@@ -162,15 +182,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     searching, setSearching, searched, setSearched, radiusKm, setRadiusKm,
     selected, setSelected, showDiscovery, setShowDiscovery,
     prices, setPrices, fuel, setFuel, quickPlans, setQuickPlans,
-    nearbyBase, setNearbyBase, clearTransient,
+    nearbyBase, setNearbyBase, searchAnchor, setSearchAnchor, clearTransient,
     ridePath, setRidePath,
     flowOpen, setFlowOpen, flowParams, setFlowParams,
     news, setNews,
     journey, setJourney,
     trip, setTrip,
     flyTo, setFlyTo,
-  }), [mode, dark, userLoc, source, dest, weather, places, searchResults, pinned, selected, showDiscovery,
-      prices, fuel, quickPlans, nearbyBase, ridePath, flowOpen, flowParams, news, journey, trip, flyTo]);
+  };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
