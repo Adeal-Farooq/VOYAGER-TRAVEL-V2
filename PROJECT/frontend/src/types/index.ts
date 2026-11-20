@@ -315,6 +315,9 @@ export interface TripInputData {
   budget: number;
   budgetShape: BudgetShape;
   budgetSplits: BudgetSplits;
+  /** Backend category keys (heritage, food, nature, ...). */
+  categories: string[];
+  /** Legacy label list kept for older saved drafts. */
   interests: string[];
   pace: Pace;
 }
@@ -322,12 +325,21 @@ export interface TripInputData {
 // ============================================================ trip plan (generated itinerary)
 export interface TripPlanPlace {
   id: string;
+  osm_id?: string;
+  /** Google place_id — enables live reviews/photos on the details panel. */
+  place_id?: string;
   name: string;
   category: string;
   description: string;
+  address?: string;
+  photo_url?: string;
   duration_min: number;
+  duration_known?: boolean;
   entry_fee: number;
+  entry_fee_child?: number | null;
+  entry_fee_known?: boolean;
   rating: number;
+  rating_known?: boolean;
   review_count: number;
   best_times: string[];
   crowd: Record<string, string>;
@@ -339,19 +351,31 @@ export interface TripPlanPlace {
   family_friendly: boolean;
   physically_demanding: boolean;
   accessibility_notes: string;
+  suitability?: Record<string, boolean>;
   destination: string;
   data_source: string;
   data_is_estimated: boolean;
+  verified?: boolean;
   score: number;
   components: Record<string, number>;
   why: string;
   rank: number;
+  // scheduling (added by generate_plan)
+  slot?: "early_morning" | "morning" | "afternoon" | "evening" | "night";
+  suggested_start?: string;
+  suggested_end?: string;
+  /** straight-line km from the previous stop on the same day */
+  travel_from_prev_km?: number;
 }
 
 export interface TripPlanDay {
   day: number;
+  theme?: string;
   place_count: number;
   total_activity_min: number;
+  total_distance_km?: number;
+  start_time?: string;
+  end_time?: string;
   places: TripPlanPlace[];
 }
 
@@ -359,10 +383,33 @@ export interface TripPlan {
   destination: string;
   group_type: string;
   interests: string[];
+  categories?: string[];
+  data_source?: string;
   pace: string;
   days: TripPlanDay[];
   total_places: number;
+  total_activity_min?: number;
+  total_distance_km?: number;
   disclaimer: string;
   relaxed: boolean;
   warning?: string;
+}
+
+// A travel option the traveller picked for one hop of the itinerary.
+export interface TripTransportChoice {
+  key: string;
+  mode: "transit" | "private" | "walk";
+  label: string;
+  detail?: string;
+  fare?: number | null;
+  duration_min?: number | null;
+  geometry: Coord[];
+  source?: "live" | "estimated" | "planned";
+  note?: string;
+}
+
+export interface TripHopRoute {
+  key: string;
+  mode: string;
+  geometry: Coord[];
 }

@@ -237,13 +237,21 @@ class TripPlace(BaseModel):
     ESTIMATED (surfaced to the user as "approximate — verify before your trip").
     """
     id: str
+    osm_id: str = ""  # OpenStreetMap id when the place came from Overpass
+    place_id: str = ""  # Google place_id when live enrichment is possible
     name: str
     category: str  # primary category, e.g. nature / heritage / food / ...
     description: str
-    duration_min: int  # average visit duration
-    entry_fee: float  # INR per person (0 = free)
-    rating: float  # out of 5 (estimated/typical)
-    review_count: int  # rough count, for confidence weighting
+    address: str = ""  # real formatted address when the source provides one
+    photo_url: str = ""  # real image URL (Google/SerpAPI) when available
+    duration_min: int = 60  # average visit duration
+    duration_known: bool = True
+    entry_fee: float = 0.0  # INR per person (0 = free or unknown)
+    entry_fee_child: float | None = None  # INR per child when known
+    entry_fee_known: bool = True
+    rating: float = 0.0  # out of 5 (0 = unknown)
+    rating_known: bool = True
+    review_count: int = 0  # rough count, for confidence weighting
     best_times: list[TimeSlot] = Field(default_factory=list)  # valid windows
     crowd: dict[TimeSlot, CrowdLevel] = Field(default_factory=dict)
     opening_hours: str = ""
@@ -255,8 +263,10 @@ class TripPlace(BaseModel):
     physically_demanding: bool = False
     accessibility_notes: str = ""
     destination: str = ""
-    data_source: str = "static"  # static | live | llm (llm => approximate)
+    data_source: str = "curated"  # curated | google | osm | live | static
     data_is_estimated: bool = True  # fees/timings/ratings approximate unless live
+    verified: bool = False
+    suitability: dict[str, bool] = Field(default_factory=dict)
 
 
 class RankedPlace(TripPlace):

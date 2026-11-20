@@ -11,6 +11,7 @@ import type {
   RidePrice,
   SegmentResponse,
   TripPlan,
+  TripPlanPlace,
   WeatherNow,
 } from "../types";
 
@@ -32,15 +33,25 @@ export interface Api {
   driveRoute: (origin: LatLng, dest: LatLng) => Promise<DriveRoute>;
   ask: (message: string, context?: AskContext) => Promise<AskResponse>;
   tripPlan: (p: TripPlanRequest) => Promise<TripPlan>;
+  tripDiscover: (p: TripPlanRequest & { limit?: number }) => Promise<TripDiscoverResponse>;
 }
 
 export interface TripPlanRequest {
   destination: string;
   interests: string[];
+  categories: string[];
   group_type: string;
   days: number;
   pace: string;
   budget?: number;
+}
+
+export interface TripDiscoverResponse {
+  destination: string;
+  places: TripPlanPlace[];
+  data_source: string;
+  disclaimer: string;
+  relaxed: boolean;
 }
 
 export const api: Api = {
@@ -138,6 +149,11 @@ export const api: Api = {
 
   async tripPlan(p) {
     const { data } = await http.post<TripPlan>("/trip/plan", p);
+    return data;
+  },
+
+  async tripDiscover(p) {
+    const { data } = await http.post<TripDiscoverResponse>("/trip/places", p);
     return data;
   },
 };
